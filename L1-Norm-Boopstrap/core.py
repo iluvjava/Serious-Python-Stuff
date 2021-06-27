@@ -28,7 +28,7 @@ def L2RegFit(X, y):
     return (np.linalg.pinv(X.T@X)@X.T@y).reshape(-1)
 
 
-def BoopStrap(
+def RegBoopStrap(
             X:np.ndarray,   # regression data
             y:np.ndarray,   # labels
             fxn:callable,   # model training function
@@ -49,7 +49,7 @@ def BoopStrap(
     """
     assert X.ndim == 2 and X.shape[0] == y.shape[0] and y.ndim == 1
     assert X.ndim == 2
-    assert alpha < 100 and alpha > 0
+    assert alpha < 50 and alpha > 0
     m, n = X.shape
     trials = X.shape[0] if trials is None else trials
     queries = X[:, 1] if queries is None else queries
@@ -65,7 +65,7 @@ def BoopStrap(
         Yhat = (V@Coefficient[:, np.newaxis]).reshape(-1)
         BoostrapYhat.append(Yhat)
     OutputMatirx = np.array(BoostrapYhat)
-    ConfidenceBand = np.percentile(OutputMatirx, [alpha, 100 - alpha], axis=0)
+    ConfidenceBand = np.percentile(OutputMatirx, [alpha/2, 100 - alpha/2], axis=0)
     return ConfidenceBand
 
 
@@ -73,7 +73,7 @@ def main():
     x = np.arange(-1, 1, 0.025)
     X = np.vander(x, 5)
     f = lambda x: np.cos(np.pi*x)
-    y = f(x) + np.random.randn(X.shape[0]) * 0.1
+    y = f(x) + np.random.randn(X.shape[0]) * 0.2
     for II in range(2, len(y) - 2):
         if np.random.rand() < 0.1:
             y[II] = -3
@@ -94,7 +94,7 @@ def main():
 
     def Bootstrap():
         Queries = np.arange(-1, 1, 0.01)
-        ConfidenceBand1 = BoopStrap(
+        ConfidenceBand1 = RegBoopStrap(
             X,
             y,
             L1RegFit,
@@ -102,7 +102,7 @@ def main():
             alpha=1,
             trials=300
         )
-        ConfidenceBand2 = BoopStrap(
+        ConfidenceBand2 = RegBoopStrap(
             X,
             y,
             L2RegFit,
@@ -128,6 +128,7 @@ def main():
                          color='tab:green')
         plt.title("Confidence Band 1, 2 Norm Regression")
         plt.legend(["Ground Truth", "Model L1 Loss", "Model L2 Loss"])
+        plt.savefig("bootstrap-l1-l2.png", dpi=400)
         plt.show()
     Bootstrap()
 
