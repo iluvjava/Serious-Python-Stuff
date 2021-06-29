@@ -4,10 +4,11 @@ vector equation.
 
 """
 
+
 import numpy as np
 norm = np.linalg.norm
 rand = np.random.rand
-import scipy.sparse as scipy_sparse
+
 
 class TheSolution:
 
@@ -64,26 +65,71 @@ def ConjugateGradient(A, b, maxitr=None, x0=None, tol=1e-4):
     assert tol > 0, "Tolerance is a non negative number."
     maxitr = 2*m if maxitr is None else maxitr
     x = x0 if x0 is not None else np.ones((n, 1))
-    d = r = b - A @ x
+    return AbstractConjugateGradient(lambda x: A@x, b, maxitr=maxitr, x0=x, tol=tol)
+
+
+def AbstractConjugateGradient(
+                        A:callable,
+                        b:np.ndarray,
+                        x0:np.ndarray,
+                        maxitr=None,
+                        tol=1e-4,
+                        verbose:bool=False):
+    """
+        This method is just Conjugate Gradient but the matrix vector process has been
+        abstracted out.
+        Assumption:
+            the abstracted A is still a square matrix.
+    :param A:
+        A callable that can perform linear transformation on some tensor
+    :param b:
+        This is the abstract vector on the rhs of the linear system.
+    :param x0:
+        This is an initial guess, and it has to be provided
+    :param maxitr:
+        maximal number of iterations
+    :tol tolerance:
+        The tolerance allowed to terminate the iterations.
+    """
+    assert tol > 0, "Tolerance is a non negative number."
+    n = x0.shape[0]
+    maxitr = 2 * n if maxitr is None else maxitr
+    x = x0 if x0 is not None else np.ones((n, 1))
+    d = r = b - A(x)
     Sol = TheSolution()
     Sol.append(x)
-    Itr = 0
-    while norm(r, np.inf) > tol and Itr < maxitr:
-        alpha = np.sum(r*r)/np.sum(d*A@d)
-        x += alpha*d
-        if Itr % 5:
-            rnew = b - A@x
+    Sol.NumberItr = 0
+    while np.max(np.abs(r)) > tol and Sol.NumberItr < maxitr:
+        alpha = np.sum(r * r) / np.sum(d * A(d))
+        x += alpha * d
+        if Sol.NumberItr % 5:
+            rnew = b - A(x)
         else:
-            rnew = r - alpha*A@d
-        beta = norm(rnew)**2/norm(r)**2
+            rnew = r - alpha * A(d)
+        beta = np.sum(rnew*rnew) / np.sum(r*r)
         d = rnew + beta * d
         r = rnew
         Sol.append(x)
-        Itr += 1
-
-    if Itr == maxitr: Sol.flag = 1
+        Sol.NumberItr += 1
+        if verbose:
+            print(f"Itr: {Sol.NumberItr}; Residual Inf Norm: {np.max(np.abs(r))}")
+    if Sol.NumberItr == maxitr: Sol.flag = 1
     return Sol
 
+def AbstractCGGenerate(A:callable, b, x0):
+    """
+        A generator for the Conjugate Gradient method, so whoever uses it
+        has the pleasure to collect all the quantities at runtime.
+    :param A:
+    :param b:
+    :param x0:
+    :return:
+    """
+    pass
+
+class CGAnalyzer:
+
+    pass
 
 
 def main():
