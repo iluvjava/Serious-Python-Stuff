@@ -133,7 +133,7 @@ def AbstractCGGenerate(A:callable, b, x0, maxitr:int=100):
     while Itr < maxitr:
         alpha = np.sum(r * r) / np.sum(d * A(d))
         if alpha < 0:
-            print(f"CG negative energy norm!")
+            warnings.warn(f"CG negative energy norm! Matrix Not symmetric and SPD! Convergence might fail.")
         x += alpha * d
         # rnew = r - alpha * A(d)
         rnew = b - A(x)
@@ -234,7 +234,6 @@ def main():
         A, b = rand(N, N), rand(N, 1)
         Analyzer = CGAnalyzer(lambda x: A.T@A@x, A.T@b, A.T@b)
         for x, r in  tqdm(Analyzer.Generate(N*N)):
-            # print(f"||A.T@A@x - A.T@b|| = {r}; ||b - A@x|| = {np.max(np.abs(A@x - b))}")
             Res =np.max(np.abs(A.T@A@x - A.T@b))
             if Res< 1e-5:
                 print(Res)
@@ -243,7 +242,7 @@ def main():
         print("Scipy: ")
         x_new, flag = cg(A.T@A, A.T@b, tol=1e-5)
         print(f"||A.T@A@x - A.T@b|| = {np.max(np.abs(A.T@A@x_new - A.T@b))}; flag: {flag}")
-
+    AnalyzerTesting()
     print("====== Analyzer Testing =======")
     from tqdm import tqdm
     import matplotlib.pyplot as plt
