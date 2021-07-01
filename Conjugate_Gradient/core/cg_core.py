@@ -4,7 +4,6 @@ vector equation.
 
 """
 
-
 import numpy as np
 norm = np.linalg.norm
 rand = np.random.rand
@@ -134,8 +133,7 @@ def AbstractCGGenerate(A:callable, b, x0, maxitr:int=100):
     while Itr < maxitr:
         alpha = np.sum(r * r) / np.sum(d * A(d))
         if alpha < 0:
-            print()
-            warnings.warn(f"CG negative energy norm!")
+            print(f"CG negative energy norm!")
         x += alpha * d
         # rnew = r - alpha * A(d)
         rnew = b - A(x)
@@ -270,8 +268,6 @@ def main():
     plt.show()
 
 
-
-
 if __name__ == "__main__":
     import sys
     import os
@@ -279,4 +275,3 @@ if __name__ == "__main__":
     print(f"cwd: {os.getcwd()}")
     print(f"exec: {sys.executable}")
     main()
-
