@@ -5,7 +5,7 @@ Investigate: Is the sharpen kernel really the inverse of whatever that does the
 blurring?
 
 """
-from Conjugate_Gradient.core import core
+from Conjugate_Gradient.core import cg_core
 import scipy.sparse as scipy_sparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -61,7 +61,7 @@ def main():
         plt.matshow(dz.reshape(z.shape)); plt.title("dz")
         plt.show()
         # Reverse Laplacian
-        Sol = core.ConjugateGradient(L, dz)
+        Sol = cg_core.ConjugateGradient(L, dz)
         recovered = Sol.X[-1].reshape(z.shape)
         plt.matshow(recovered); plt.title("recovered z")
         plt.show()

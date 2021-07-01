@@ -1,7 +1,7 @@
 import core.laplacian2d
 Laplacian2D = core.laplacian2d.Laplacian2D
-import core.core
-ConjugateGradient = core.core.ConjugateGradient
+import core.cg_core
+ConjugateGradient = core.cg_core.ConjugateGradient
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np

@@ -8,6 +8,7 @@ vector equation.
 import numpy as np
 norm = np.linalg.norm
 rand = np.random.rand
+import warnings
 
 
 class TheSolution:
@@ -116,7 +117,8 @@ def AbstractConjugateGradient(
     if Sol.NumberItr == maxitr: Sol.flag = 1
     return Sol
 
-def AbstractCGGenerate(A:callable, b, x0):
+
+def AbstractCGGenerate(A:callable, b, x0, maxitr:int=100):
     """
         A generator for the Conjugate Gradient method, so whoever uses it
         has the pleasure to collect all the quantities at runtime.
@@ -124,13 +126,91 @@ def AbstractCGGenerate(A:callable, b, x0):
     :param b:
     :param x0:
     :return:
+        itr, r, x
     """
-    pass
+    x = x0
+    d = r = b - A(x)
+    Itr = 0
+    while Itr < maxitr:
+        alpha = np.sum(r * r) / np.sum(d * A(d))
+        if alpha < 0:
+            print()
+            warnings.warn(f"CG negative energy norm!")
+        x += alpha * d
+        # rnew = r - alpha * A(d)
+        rnew = b - A(x)
+        beta = np.sum(rnew * rnew) / np.sum(r * r)
+        d = rnew + beta * d
+        r = rnew
+        Itr += 1
+        yield Itr, r, x
+
 
 class CGAnalyzer:
+    """
+        See your Conjugate Gradient Algorithm at runtime and collect data from
+        it while running.
 
-    pass
+    """
+    def __init__(this, operator:callable, b:np.ndarray, initialGuess:np.ndarray):
+        this._X0 = initialGuess
+        this._RHS = b
+        this._A = operator
+        this._ResidualsNorm = []
 
+        r = this.RHS - this._A(this._X0)
+        r = np.max(np.abs(r))
+
+        this._ResidualsNorm.append(r)
+        this._BestSolution = None
+        this._BestSolutionNorm = float("inf")
+        this.Itr = 0
+
+    @property
+    def X0(this):
+        return this._X0.copy()
+
+    @X0.setter
+    def X0(this, x0):
+        type(this._A(x0)) is np.ndarray
+        this._X0 = x0
+
+    @property
+    def RHS(this):
+        return this._RHS.copy()
+
+    @property
+    def BestSolution(this):
+        if this._BestSolution is None:
+            return this.X0
+        return this._BestSolution.copy()
+
+    @property
+    def ResidualNorm(this):
+        return this._ResidualsNorm
+
+    @RHS.setter
+    def RHS(this, b):
+        this._RHS = b
+    
+    def Generate(this, maxitr:int=100):
+        """
+            Get the residual (inf norm), and x for each iteration (In that order).
+        :param maxitr:
+        :return:
+        """
+
+        for Itr, R, X in AbstractCGGenerate(this._A,
+                                            this._RHS,
+                                            this._X0,
+                                            maxitr=maxitr):
+            this.Itr = Itr
+            Residual = np.max(np.abs(R))
+            this._ResidualsNorm.append(Residual)
+            if Residual < this._BestSolutionNorm:
+                this._BestSolution = X
+                this._BestSolutionNorm = Residual
+            yield X, Residual
 
 def main():
     def SimpleTest(solver:callable, N=30):
@@ -139,16 +219,57 @@ def main():
         c = A.T@b
         Sol = solver(M, c)
         x = Sol.X[-1]
-        print(f"The ||A.T@A - A.T@b|| is: {norm(c - M@x, 1)}")
+        print(f"The ||A.T@Ax - A.T@b|| is: {norm(c - M@x, 1)}")
         print(f"The ||A@x - b|| is: {norm(A@x - b, 1)}")
         print(f"The flag is: {Sol.flag}")
-
     print("======== Steepest Descend =======")
     for __ in range(10):
         SimpleTest(SteepestDescend)
     print("======= Conjugate Gradient ======")
     for __ in range(10):
         SimpleTest(ConjugateGradient)
+    print("======= Analyizer Testing =======")
+    def AnalyzerTesting():
+        print("Non Symmetric")
+        from tqdm import tqdm
+        N = 128
+        A, b = rand(N, N), rand(N, 1)
+        Analyzer = CGAnalyzer(lambda x: A.T@A@x, A.T@b, A.T@b)
+        for x, r in  tqdm(Analyzer.Generate(N*N)):
+            # print(f"||A.T@A@x - A.T@b|| = {r}; ||b - A@x|| = {np.max(np.abs(A@x - b))}")
+            Res =np.max(np.abs(A.T@A@x - A.T@b))
+            if Res< 1e-5:
+                print(Res)
+                break
+        from scipy.sparse.linalg import cg
+        print("Scipy: ")
+        x_new, flag = cg(A.T@A, A.T@b, tol=1e-5)
+        print(f"||A.T@A@x - A.T@b|| = {np.max(np.abs(A.T@A@x_new - A.T@b))}; flag: {flag}")
+
+    print("====== Analyzer Testing =======")
+    from tqdm import tqdm
+    import matplotlib.pyplot as plt
+    N = 128
+    A, b = rand(N, N), rand(N, 1)
+    A = A.T@A
+    CorrectX = np.linalg.pinv(A)@b
+    Analyzer = CGAnalyzer(lambda x: A@x, b, np.ones(b.shape))
+    EnergyNorm = []
+    for x, r in  tqdm(Analyzer.Generate(N*N)):
+        E = x - CorrectX
+        EnergyNorm.append(np.sum(E*(A@E)))
+        if r < 1e-5:
+            break
+    x = Analyzer.BestSolution
+    print(f"error: {np.linalg.norm(x - CorrectX)}")
+    print(f"||b - Ax_{{k}}|| = {np.linalg.norm(b - A@x)}")
+    plt.plot(EnergyNorm)
+    plt.title("$\\Vert e\\Vert_A $")
+    plt.show()
+    plt.plot(Analyzer.ResidualNorm)
+    plt.show()
+
+
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
-import core.core
-AbstractConjugateGradient = core.core.AbstractConjugateGradient
+import core.cg_core
+AbstractConjugateGradient = core.cg_core.AbstractConjugateGradient
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -15,8 +15,21 @@ def ReadImageAsNumpy(file:str):
 
 
 def BoxBlur(Image:np.ndarray, boxsize=5):
-    Kernel = np.ones((boxsize, boxsize))/boxsize**2
-    return signal.convolve2d(Image, Kernel, boundary='fill', mode='same')
+    assert Image.ndim == 2 or Image.ndim == 3, \
+         "Should be a matrix, or a 3d tensor. "
+    if Image.ndim == 3:
+        assert Image.shape[2] == 3, \
+            "Image should have 3 color channels on the last axis. "
+    Kernel = np.ones((boxsize, boxsize)) / boxsize ** 2
+    if Image.ndim == 2:
+        return signal.convolve2d(Image, Kernel, boundary='wrap', mode='same')
+    else:
+        Blurred = np.zeros(Image.shape)
+        for II in range(Image.shape[2]):
+            Blurred[..., II] = \
+                signal.convolve2d(Image, Kernel, boundary='wrap', mode='same')
+        return Blurred
+
 
 
 def Sharpen(Image:np.ndarray):
@@ -37,29 +50,11 @@ def main():
     TheImage = np.mean(TheImage, axis=2)
     Matrix = TheImage[0:-1:5, 0:-1:5]
 
-    # Resize the matrix
-
-
-    def SimpleTrial():
-        Blurred = BoxBlur(Matrix)
-        plt.matshow(Blurred); plt.title("Boxblurred")
-        plt.show()
-        Deblurred = AbstractConjugateGradient(BoxBlur,
-                                              Blurred,
-                                              np.ones(Matrix.shape),
-                                              tol=1e-4,
-                                              verbose=True)
-        plt.matshow(Deblurred.X[-1]); plt.title("Deblurred by GC")
-        plt.show()
-        SharpepenedDeblurred = Sharpen(Blurred)
-        plt.matshow(SharpepenedDeblurred); plt.title("Deblurred by Sharpen")
-        plt.show()
-
     def MoreInvolved():
-        N = 3
-        BoxSize= 11
+        N = 2
+        BoxSize= 5
         Blurred = SuccessiveBlurr(Matrix, times=N, boxsize=BoxSize)
-        plt.matshow(Blurred)
+        plt.matshow(Blurred); plt.title(f"Kernel Size {BoxSize}, Iteration: {N}")
         plt.show()
         Sol = AbstractConjugateGradient(lambda x: SuccessiveBlurr(x, times=N, boxsize=BoxSize),
                                         Blurred,
@@ -68,13 +63,12 @@ def main():
                                         maxitr=50*50,
                                         verbose=True)
         Deblurred = Sol.X[-1]
-        plt.matshow(Deblurred)
+        plt.matshow(Deblurred); plt.title(f"Deblurred Image")
         plt.show()
-        plt.matshow(SuccessiveBlurr(Deblurred, times=N))
+        plt.matshow(Matrix); plt.title("Original Image")
         plt.show()
-    SimpleTrial()
+
     MoreInvolved()
-    # EvenMoreInvolved()
 
 
 if __name__ == "__main__":
