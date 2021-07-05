@@ -97,7 +97,6 @@ def main():
             )
             if r < 1e-2:
                 break
-
         plt.plot(Analyzer.ResidualNorm)
         plt.show()
         plt.imshow(Analyzer.BestSolution)
@@ -105,7 +104,41 @@ def main():
         plt.plot(EnergyNorm)
         plt.show()
 
-    MoreInvolved2()
+    def MakesSomeGoodPlots(
+            outputfilename:str,
+            imagefile:str=".\\data\\image2.png",
+            BoxSizes=[3, 5, 7, 11, 13],
+            downsample=5
+    ):
+        TheImage = ReadImageAsNumpy(imagefile)
+        TheImage /= 255
+        Matrix = TheImage[0:-1:downsample, 0:-1:downsample, 0:3]
+        Height, Width, _ = Matrix.shape
+        ToPlot = np.zeros((2*Height, Width*len(BoxSizes), 3))
+        for II, BoxSize in enumerate(BoxSizes):
+            Blurred = BoxBlur(Matrix, boxsize=BoxSize) # A
+            Analyzer = CGAnalyzer(
+                lambda x: SuccessiveBlurr(x, boxsize=BoxSize, times=2),  # A^2
+                BoxBlur(Blurred, boxsize=BoxSize), # A b
+                np.ones(Matrix.shape)
+            )
+            for x, r in tqdm(Analyzer.Generate(1000)):
+                if r < 1e-4:
+                    break
+            x /= np.max(x) # Normalized it
+            ToPlot[: Height, II*Width: (II + 1)*Width, :] = Blurred
+            ToPlot[Height:, II*Width:(II + 1)*Width, :] = x
+        plt.imshow(ToPlot)
+        plt.title(f"Top: Blurred, Bottom: Deblurred by CG, Box sizes: {BoxSizes}")
+        plt.gcf().set_dpi(300)
+        plt.show()
+        plt.savefig(f"{outputfilename}.png")
+        plt.show()
+
+    MakesSomeGoodPlots("cg-box-deblurred-alto-blep.png")
+    MakesSomeGoodPlots(outputfilename="cg-box-deblurred-nost",
+                       imagefile=".\\data\\nost1024.png",
+                       BoxSizes=[7, 9, 11, 13, 15])
 
 
 
