@@ -1,2 +1,1 @@
-# Serious-Python-Stuff
-This is a continuation from the project Silly-Python-Stuff, but this time, it's more serious. 
+"We want to use newton's method but we don't want to get trapped in a saddle point " 

@@ -131,7 +131,6 @@ def main():
         plt.imshow(ToPlot)
         plt.title(f"Top: Blurred, Bottom: Deblurred by CG, Box sizes: {BoxSizes}")
         plt.gcf().set_dpi(300)
-        plt.show()
         plt.savefig(f"{outputfilename}.png")
         plt.show()
 
@@ -139,7 +138,6 @@ def main():
     MakesSomeGoodPlots(outputfilename="cg-box-deblurred-nost",
                        imagefile=".\\data\\nost1024.png",
                        BoxSizes=[7, 9, 11, 13, 15])
-
 
 
 if __name__ == "__main__":
