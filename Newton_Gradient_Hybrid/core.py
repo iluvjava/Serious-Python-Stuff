@@ -15,14 +15,25 @@ def HybridNewtonGradient_Scalar(
     G = df(Xpre)
     for I in range(maxitr):
         XGradient = Xpre - eta*G
-        Xnext = Xpre - G/ddf(Xpre)
-        Which = "Newton"
-        if f(Xnext) > f(XGradient):
-            Which = "Gradient"
+        # Try newton if gradient is accelerating, else don't try newton.
+        Gnex = df(XGradient)
+        if abs(Gnex) < abs(G):
+            Xnewton = Xpre - G / ddf(Xpre)
+            if f(XGradient) < f(Xnewton):
+                Xnext = XGradient
+                Which = "Tried Gradient and Newton, Gradient is better"
+                G = Gnex
+            else:
+                Xnext = Xnewton
+                Which = "Tried Gradient and Newton, Newton is better"
+                G = df(Xnext)
+        else:
+            Which = "Gradient, did't try Newton"
             Xnext = XGradient
+            G = Gnex
         yield Xnext, Which
         Xpre = Xnext
-        G = df(Xnext)
+
 
 def SecantGradient_Scalar(
         f:callable,
@@ -42,20 +53,23 @@ def SecantGradient_Scalar(
 
     for _ in range(maxitr):
         Xnext2 = Xnext - eta*Gnext
-        Xnewton = Xnext - Gnext/finiteDiff(Gpre, Gnext, Xnext - Xpre)
-        if f(Xnewton) < f(Xnext2):
-            Xnext2 = Xnewton
-        yield Xnext2
+        if abs(Gnext) < abs(Gpre) and abs(Xnext2 - Xpre) > 1e-8:
+            Xnewton = Xnext - Gnext/finiteDiff(Gpre, Gnext, Xnext - Xpre)
+            if f(Xnewton) < f(Xnext2):
+                Xnext2 = Xnewton
+            yield Xnext2
+        else:
+            yield Xnext2
         Xpre, Xnext = Xnext, Xnext2
         Gpre, Gnext = Gnext, df(Xnext2)
 
 
-
 def main():
-    f = lambda x: (math.sin(x) + x)**2
-    df = lambda x: 2*(math.sin(x) + x)
-    ddf = lambda x: 2*(math.sin(x) + x)*(-math.sin(x)) + 2*(math.cos(x) + 1)**2
-    x0 = 100.5*math.pi
+    a = 1 + 1e-4
+    f = lambda x: (math.sin(x) + a*x)**2
+    df = lambda x: 2*(math.sin(x) + a*x)*(math.cos(x) + a)
+    ddf = lambda x: 2*(math.sin(x) + a*x)*(-math.sin(x)) + 2*(math.cos(x) + a)**2
+    x0 = 20000.3*math.pi
     eta = 0.1
     for I, (X, W) in enumerate(HybridNewtonGradient_Scalar(
         f, df, ddf, x0, eta, maxitr=1000
