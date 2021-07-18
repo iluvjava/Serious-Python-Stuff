@@ -33,7 +33,7 @@ class HybridOptimizer:
         _.f, _.df = f, df
         _._Momentum = momentum
         _._Eta = eta
-
+        assert isinstance(f(x0), float) or isinstance(f(x0), int)
         # running parameters for optimization:
         _._Xpre = x0
         _._Xnex = None
@@ -48,17 +48,17 @@ class HybridOptimizer:
         _._Initialize()
 
     def _Initialize(_):
-        _._Velocity = _._Momentum * _._Velocity - _.df(_._Xpre)
+        _._Velocity = _._Momentum * _._Velocity - _._Eta*_.df(_._Xpre)
         _._Xnex = _._Xpre + _._Velocity
         _._Gnex = _.df(_._Xnex)
-        _._H = (_._Gnex - _._Gpre.T) / (_._Xnex - _._Xpre.T)
+        _._H = np.diag((_._Gnex - _._Gpre).reshape(-1) / (_._Xnex - _._Xpre).reshape(-1))
         _.Xs.append(_._Xnex)
 
     def _UpdateRunningParams(_, Xnex):
         _._Xpre, _._Xnex = _._Xnex, Xnex
         _.Xs.append(Xnex)
         _._G, _._Gnex = _._Gnex, _.df(Xnex)
-        _._H = (_._Gnex - _._Gpre.T)/(_._Xnex - _._Xpre.T)
+        _._H = np.diag((_._Gnex - _._Gpre).reshape(-1)/(_._Xnex - _._Xpre).reshape(-1))
 
     def _TrySecant(_):
         df1, df2 = _._Gpre, _._Gnex
@@ -88,8 +88,8 @@ class HybridOptimizer:
         Xnex = _._TryAccGradient()
         if norm(df2) < norm(df1) and norm(df2) > 1e-8 and norm(_._H) > 1e-8:   # Try newton
             XnexNewton = _._TrySecant()
-            _._Velocity = 0         # reset velocity.
-            if norm(f(XnexNewton)) < norm(f(Xnex)):
+            if f(XnexNewton) < f(Xnex):
+                _._Velocity = 0  # reset velocity.
                 Xnex = XnexNewton
         _._UpdateRunningParams(Xnex)
         return Xnex
@@ -102,10 +102,13 @@ class HybridOptimizer:
 
 
 def main():
-    f, df = lambda x: x**2, lambda x: 2*x
-    optim = HybridOptimizer(f, df, np.array([[10], [10]]), 0.001, 0.2)
-    for I in range(3):
-        print(optim())
+    norm = np.linalg.norm
+    A = np.random.rand(2,2)
+    f, df = lambda x: norm(A@x)**2, lambda x: 2*(A.T@A)@x
+    optim = HybridOptimizer(f, df, np.array([[10], [10]]), 0.2, 0.5)
+    for I in range(100):
+        v = optim()
+        print(f"{v[0, 0]}; {v[1, 0]}, objval: {f(v)}")
 
 
 
