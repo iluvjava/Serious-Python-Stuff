@@ -10,16 +10,21 @@ import matplotlib.pyplot as plt
 
 
 class HybridOptimizer:
+    """
+            A class that binds together:
+             * a Newton's method using hessian approximated by the gradient
+             * A nesterov accelerated gradient method.
 
+             Note: This algorithm is slow and kinda stupid for the following reasons:
+             1. It computes the Hessian in a faithful manner using finite difference on gradient.
+             2. It switches between Nesterov acc gradient and newton's method, and it constant checks which one is
+             better. Hence it loses competitions against modified newton's method, accelerated gradient, and
+             quasi-newton solver.
+
+        """
     ApproxHessian = 1     # Getting the Hessian with BFGS's algorithm
     FiniteDiffHessian = 2 # Getting the Hessian by finite diff on gradient
 
-    """
-        A class that binds together:
-         * a Newton's method using hessian approximated by the gradient
-         * A nesterov accelerated gradient method.
-
-    """
     def __init__(
             _,
             f:callable,     # objective function
@@ -191,7 +196,7 @@ def main():
                 [dfy(x[0, 0], x[1, 0])]
             ])
         f = lambda x: g(x[0, 0], x[1, 0])
-        x0 = np.random.rand(2,1)*1
+        x0 = np.array([[1e-2],[-1]])
 
         eta = 0.01
         optim = HybridOptimizer(f, df, x0, eta, 0.5)
