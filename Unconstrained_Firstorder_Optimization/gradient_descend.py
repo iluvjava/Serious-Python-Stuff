@@ -154,17 +154,25 @@ class GradientMethod:
         return Xnex
 
     def _NesterovAcc(this):
+        v, m = this._v, this.m
+        xk, f, df, g = this._Xpre, this.f, this.df, this._Gpre
+        eta = this.eta
 
         pass
 
-    def __call__(this):
+    def __call__(this, proximal:callable=None):
         """
             Run specified optimization subroutine and then return the
             next guess
-            * Update parameter before the next call
+            * Will update the guess before next guess
+            * Warning, box contraints will be added in addition to the given
+            proximal operators.
+        :param proximal
+            Proximal operator for non-smooth/constraints part of the objective.
         :return:
             The next guess, a vector.
         """
+
 
         pass
 
@@ -172,7 +180,13 @@ class GradientMethod:
 
         pass
 
-    def Generate(this):
+    def Generate(this, maxitr):
+        """
+            Generate a sequence of guesses using this optimizer, it yield them
+            one by one.
+        :return:
+
+        """
 
         pass
 

@@ -2,7 +2,7 @@
     Some functions that randomly generates convex problems in high dimension.
     1. problem parameters.
     2. first order drivative.
-    3. proximal operator if non-smoothness is involved.
+    3. provides proximal operator if non-smoothness is involved, will not be part of the gradient
 """
 __all__ = ["MatrixVector"]
 
@@ -38,6 +38,21 @@ class MatrixVector:
     def df(this, x):
         return this.Atrans.dot(this.A.dot(x) - this.b)
 
+class Regression:
+
+    def __init__(this):
+        pass
+
+class RegressionLasso:
+
+    def __init__(this):
+        pass
+
+
+
+class CrossEntropy:
+    def __init__(this):
+        pass
 
 
 
