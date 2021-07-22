@@ -4,14 +4,16 @@
     2. Misc Method that help with shit, it's gonna be messy.
 
 """
-
+from typing import *
+import torch as torch
 import numpy as np
+NpTorch = Union[np.ndarray, torch.Tensor]
 
 def ArmijoLineSearch(
         f:callable,
         df:callable,
-        xk:np.ndarray,
-        p:np.ndarray,
+        xk:NpTorch,
+        p:NpTorch,
         eta:float=1,
         c1:float=0.9,
         decay:float=0.5,
@@ -27,6 +29,7 @@ def ArmijoLineSearch(
     :return:
         The stepsize chosen. Not the next guess!
     """
+
     FuncQ = 0
     while f(xk + eta*p) > xk + c1*eta*(df(xk).T.dot(p)):
         eta *= decay
@@ -36,7 +39,10 @@ def ArmijoLineSearch(
 
 
 
-def BoxProject(x:np.ndarray, boxconstraints):
+def BoxProject(
+        x:NpTorch,
+        boxconstraints:List[Tuple]
+):
     """
         Given vector x, project it onto hyper dimensional set of box
         constraints.
@@ -49,3 +55,7 @@ def BoxProject(x:np.ndarray, boxconstraints):
     """
 
     pass
+
+
+
+

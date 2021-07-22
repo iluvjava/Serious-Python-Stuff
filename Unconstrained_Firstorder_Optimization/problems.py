@@ -36,7 +36,7 @@ class MatrixVector:
         return npl.norm(this.A.dot(x) - this.b)**2
 
     def df(this, x):
-        return this.Atrans.dot(this.A.dot(x) - this.b)
+        return 2*this.Atrans.dot(this.A.dot(x) - this.b)
 
 class Regression:
 

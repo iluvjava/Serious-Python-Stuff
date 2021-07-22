@@ -15,7 +15,6 @@ decorator==5.0.9
 defusedxml==0.7.1
 distlib==0.3.2
 entrypoints==0.3
-enum34==1.1.10
 ez-setup==0.9
 filelock==3.0.12
 graphviz==0.16

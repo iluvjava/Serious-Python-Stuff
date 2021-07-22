@@ -1,3 +1,5 @@
+__all__ = ["GradOpt", "GradAlg", "GradientMethod"]
+
 from enum import Enum
 from utils import *
 import numpy as np
@@ -10,8 +12,10 @@ class GradOpt(Enum):
         1. Use ArmijoLineaSearch Subroutine for all descend directions
         2. Keep the smallest learning rate from linesearch and accumulate them.
         3. Set velocity to zero for accelerated gradient, if objective increases.
-        4. Store all objective value, and usage data on f, df, for benchmarking.
-        5. Store all choices of the algorithm in detail as string in the field.
+        4. GradientRestart:
+            - Restart the velocity of the momentum method's search direction is
+            not increasing the objective on the gradient of the previous point.
+
     """
     ArmijoLineSearch = 1
     SteepestDescend = 2
@@ -58,7 +62,7 @@ class GradientMethod:
             this,
             f:callable,
             df:callable,
-            x0,
+            x0:NpTorch,
             eta:float=0.1,
             momentum:float=0.2,
             algo:GradAlg=GradAlg.Vanilla,
@@ -77,27 +81,44 @@ class GradientMethod:
 
         """
         this.f, this.df = f, df
+        assert momentum > 0 and eta > 0 and momentum < 1, "Eta, maximal step size should be positive and momentum should be betwen 0 and 1. "
         this.eta, this.m = eta, momentum
 
-        #Parameters for optimization:
-        this._v = 0 # velocity
+
+        this._Setup(x0, algo, kargs)
+
+
+    def _Setup(this,
+               f:callable,
+               df:callable,
+               x0:NpTorch,
+               algo:GradAlg,
+               **kargs):
+
+        # Parameters for optimization:
+        this._v = 0  # velocity
         this._Xpre = x0
         this._ObjvalPre = f(x0)
-        assert type(this._ObjvalPre) is float or type(this.ObjVal) is int, "f, should be a scalar function."
+        assert isinstance(this._ObjvalPre, float) or isinstance(this._ObjvalPre, int), "f, should be a scalar function."
         this._Gpre = df(x0)
-        assert x0.shape == x0, "the gradient and the input vector for objective should have the same shape."
-
+        assert x0.shape == this._Gpre.shape, "the gradient and the input vector for objective should have the same shape."
         # Misc parameters
-        this.Report = ""
-        this.Xs = [x0]
-        this.ObjVal = [this.ObjVal]
-        this.Gs = [this._Gpre]
         this.Kargs = kargs
         this.Options = kargs["opts"] if "opts" in kargs else {}
-        this.Box = kargs["box"] if "box" in kargs else {}
+        this.Box = kargs["box"] if "box" in kargs else None
         this.Algo = algo
 
-    def _Report(this, mesg):
+        # diagonostic params
+        this.Report = ""
+        this.Xs = []
+        this.ObjVal = []
+        this.Gs = []
+        if GradOpt.Diagnostic in this.Options:
+            this.Xs.append(x0)
+            this.ObjVal.append([this.ObjVal])
+            this.Gs.append([this._Gpre])
+
+    def _Report(this, mesg:str):
         if GradOpt.Diagnostic in this.Options:
             this.Report += mesg
 
@@ -114,7 +135,7 @@ class GradientMethod:
         xk, f, df, g = this._Xpre, this.f, this.df, this._Gpre
         eta = this.eta if eta is None else eta
         p = -g if p is None else p
-        assert p.dot(g) < 0, "Search direction is increasing the objective"
+        assert (p.T).dot(g) <= 0, "Search direction is increasing the objective"
         # setup Xnex depending on Policies.
         if GradOpt.ArmijoLineSearch in this.Options:
             eta = ArmijoLineSearch(f, df, xk, eta)
@@ -142,7 +163,7 @@ class GradientMethod:
         xk, f, df, g = this._Xpre, this.f, this.df, this._Gpre
         eta = this.eta
         p = m*v - eta*g
-        if p.dot(g) < 0: # only line search when it's in the decreasing direction
+        if (p.T).dot(g) < 0: # only line search when it's in the decreasing direction
             Xnex = this._LineSearch(p=p, eta=1)
         else:
             if GradOpt.GradientRestart in this.Options:
@@ -157,6 +178,7 @@ class GradientMethod:
         v, m = this._v, this.m
         xk, f, df, g = this._Xpre, this.f, this.df, this._Gpre
         eta = this.eta
+        # TODO: IMPLEMENT
 
         pass
 
@@ -173,24 +195,60 @@ class GradientMethod:
             The next guess, a vector.
         """
 
+        if GradAlg.Vanilla is this.Algo:
+            Xnex = this._VanillaGrad()
+        elif GradAlg.ClassicAcc is this.Algo:
+            Xnex = this._ClassicAcc()
+        elif GradAlg.NesterovAcc is this.Algo:
+            # TODO: IMPLEMENT
+            raise Exception("Method Not implemented")
+        elif GradAlg.ConjugateGrad is this.Algo:
+            # TODO: IMPLEMENT
+            raise Exception("Method Not implemented")
+        else:
+            raise Exception("Method Not implemented")
+        if this.Box is not None:
+            # TODO: IMPLEMENT
+            pass
+        if GradOpt.Diagnostic in this.Options:
+            # TODO: IMPLEMENT
+            pass
 
-        pass
+        this._Xpre = Xnex
+        this._Gpre = this.df(Xnex)
+        this.ObjVal = this.f(Xnex)
+        return Xnex
+
+
 
     def __repr__(this):
+        # TODO: IMPLEMENT
+        pass
 
+    def Iterator(this, maxitr):
+        # TODO: Implement
         pass
 
     def Generate(this, maxitr):
         """
             Generate a sequence of guesses using this optimizer, it yield them
             one by one.
-        :return:
+            * Intended to be used as an iterator.
+        :return :
 
         """
 
+        # TODO: Implement
         pass
 
-    def Reset(this, x0=None):
+
+    def Reset(
+            this,
+            x0:NpTorch,
+            eta:float=0.1,
+            momentum:float=0.2,
+            algo:GradAlg=GradAlg.Vanilla,
+            **kargs):
         """
             Reset the optimizer at current point, or a new point.
             * Clear momentum
@@ -200,16 +258,38 @@ class GradientMethod:
         :return:
             None
         """
+        # TODO: Implement
+        this._Setup(this.f, this.df, x0, eta, momentum, algo, kargs)
+
         pass
 
 
-def test():
-    pass
+def test1():
+    norm = npl.norm
+    A = np.array([[1, 2], [2, 1]])
+    b = np.array([[1], [1]])
+    x0 = np.array([[0], [0]])
+    f = lambda x: norm(A.dot(x) - b)**2
+    df = lambda x: 2*(A.T).dot(A.dot(x) - b)
+    print("Creating a simple problem...")
+    print("Testing Default Settings...")
+    Subject = GradientMethod(f, df, x0, eta=1/(4*norm(A.T@A)))
+    for _ in tqdm(range(1000)):
+        Subject()
+    FinalVal = f(Subject())
+    assert FinalVal < 1e-16, f"didn't converge in 1000 iterations, finalval {FinalVal}"
+    print("Test Finished")
+    print("Reset and Adding Armijo linesearch")
+
+
+
 
 
 if __name__ == "__main__":
+    from tqdm import tqdm
+    import matplotlib as plt
     import os
     print(f"{os.curdir}")
     print(f"{os.getcwd()}")
-    test()
+    test1()
 
