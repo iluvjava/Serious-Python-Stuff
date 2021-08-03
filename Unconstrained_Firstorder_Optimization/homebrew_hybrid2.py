@@ -215,7 +215,6 @@ def main():
         plt.title("objective value")
         plt.show()
 
-
     TestWithAFuncFromWiki()
 
 

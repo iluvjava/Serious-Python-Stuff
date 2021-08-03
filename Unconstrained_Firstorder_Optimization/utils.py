@@ -8,6 +8,7 @@ from typing import *
 import torch as torch
 import numpy as np
 NpTorch = Union[np.ndarray, torch.Tensor]
+Box = List[Tuple[Union[int, float]]]
 
 def ArmijoLineSearch(
         f:callable,
@@ -39,7 +40,7 @@ def ArmijoLineSearch(
 
 
 
-def BoxProject(
+def ProximalBoxConstraints(
         x:NpTorch,
         boxconstraints:List[Tuple]
 ):
